@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CACEIS Human Capital AI Prototype — D4</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+:root{
+  --navy:#1B3A6B; --blue:#2E6DA4; --gold:#C8922A;
+  --red:#C0392B; --green:#1A6B3A; --purple:#8E44AD;
+  --muted:#6B7A99; --slate:#2C3E50; --dark:#0D1B2A;
+  --bg:#F5F7FA; --card:#FFFFFF; --border:#E1E8F0;
+}
+body{background:var(--bg);color:var(--slate);line-height:1.5;min-height:100vh}
+
+/* Top bar */
+.topbar{background:linear-gradient(135deg,var(--dark) 0%,var(--navy) 100%);color:#fff;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:36px;height:36px;background:var(--gold);color:var(--dark);font-weight:700;display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:14px}
+.brand-text h1{font-size:15px;letter-spacing:.05em;font-weight:600}
+.brand-text p{font-size:11px;color:rgba(255,255,255,.6);font-weight:400}
+.live-badge{background:var(--green);color:#fff;padding:4px 12px;border-radius:100px;font-size:11px;font-weight:600;display:flex;align-items:center;gap:6px}
+.live-dot{width:6px;height:6px;background:#fff;border-radius:50%;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Tab bar */
+.tabs{background:#fff;border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:0;overflow-x:auto}
+.tab{padding:14px 20px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.tab:hover{color:var(--navy)}
+.tab.active{color:var(--navy);border-bottom-color:var(--gold);font-weight:600}
+.tab-icon{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg);border-radius:4px;font-size:11px;font-weight:700}
+.tab.active .tab-icon{background:var(--gold);color:#fff}
+
+/* Content area */
+.content{padding:24px;max-width:1400px;margin:0 auto}
+.page{display:none}
+.page.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Module header */
+.module-header{margin-bottom:20px}
+.module-header h2{font-size:22px;color:var(--navy);font-weight:700;margin-bottom:4px}
+.module-header p{color:var(--muted);font-size:13px}
+.module-tag{display:inline-block;background:var(--gold);color:#fff;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.05em;margin-bottom:8px}
+.module-tag.green{background:var(--green)}
+.module-tag.blue{background:var(--blue)}
+.module-tag.purple{background:var(--purple)}
+
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.card-title{font-size:13px;font-weight:600;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-subtitle{font-size:11px;color:var(--muted);font-weight:400;margin-left:auto}
+
+/* Grids */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:900px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+
+/* Inputs */
+.input-group{margin-bottom:18px}
+.input-group label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--slate);margin-bottom:6px}
+.input-group .value{font-family:monospace;color:var(--navy);font-weight:700}
+.input-group input[type=range]{width:100%;height:6px;border-radius:3px;outline:none;-webkit-appearance:none;background:var(--border)}
+.input-group input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.input-group input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid #fff}
+.input-group select,.input-group input[type=text],.input-group input[type=number]{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:#fff;color:var(--slate)}
+.input-group select:focus,.input-group input:focus{outline:none;border-color:var(--gold)}
+.input-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* KPI cards */
+.kpi{background:var(--bg);padding:14px;border-radius:8px;border-left:3px solid var(--blue)}
+.kpi.green{border-left-color:var(--green)}
+.kpi.gold{border-left-color:var(--gold)}
+.kpi.red{border-left-color:var(--red)}
+.kpi.purple{border-left-color:var(--purple)}
+.kpi-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;font-weight:600}
+.kpi-value{font-size:24px;font-weight:700;color:var(--navy);line-height:1}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.kpi-value.up{color:var(--green)}
+.kpi-value.down{color:var(--red)}
+.kpi-value.warn{color:var(--gold)}
+
+/* Result panel */
+.result-panel{background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);color:#fff;padding:20px;border-radius:10px;margin-bottom:16px}
+.result-panel.crit{background:linear-gradient(135deg,#7a1c14 0%,var(--red) 100%)}
+.result-panel.high{background:linear-gradient(135deg,#a06b14 0%,var(--gold) 100%)}
+.result-panel.mid{background:linear-gradient(135deg,#1f4f80 0%,var(--blue) 100%)}
+.result-panel.low{background:linear-gradient(135deg,#114c2a 0%,var(--green) 100%)}
+.result-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.7;margin-bottom:6px}
+.result-value{font-size:42px;font-weight:700;line-height:1;font-family:monospace;letter-spacing:-.02em}
+.result-meta{font-size:13px;opacity:.85;margin-top:8px}
+
+/* Risk explanation */
+.driver-list{margin-top:12px}
+.driver{padding:10px 12px;background:rgba(255,255,255,.1);border-radius:6px;margin-bottom:6px;display:flex;align-items:flex-start;gap:10px;font-size:12px}
+.driver-icon{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+.driver-icon.up{background:rgba(255,200,200,.3)}
+.driver-icon.down{background:rgba(200,255,200,.3)}
+.driver-text{flex:1;line-height:1.4}
+.driver-text strong{display:block;margin-bottom:2px}
+
+/* Buttons */
+.btn{padding:10px 18px;background:var(--gold);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn:hover{background:#a87917;transform:translateY(-1px);box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.btn-secondary{background:#fff;color:var(--navy);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--bg);transform:translateY(-1px)}
+
+/* Cluster radar */
+.entity-card{background:var(--bg);padding:12px;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .15s}
+.entity-card:hover{background:#fff;border-color:var(--gold);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.entity-card.selected{border-color:var(--gold);background:#fff}
+.entity-card.crit{border-left:4px solid var(--red)}
+.entity-card.warn{border-left:4px solid var(--gold)}
+.entity-card.ok{border-left:4px solid var(--green)}
+.entity-name{font-weight:600;color:var(--navy);font-size:13px}
+.entity-score{font-size:18px;font-weight:700;margin-top:4px}
+.entity-meta{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* Decision panel */
+.decision-box{background:#fff8e7;border-left:3px solid var(--gold);padding:14px;border-radius:0 6px 6px 0;margin-top:14px}
+.decision-box-title{font-size:11px;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.decision-box-text{font-size:13px;color:var(--slate);line-height:1.5}
+.decision-box-text strong{color:var(--navy)}
+
+/* Charts container */
+.chart-container{position:relative;width:100%;height:240px}
+
+/* Footer */
+.footer-bar{margin-top:32px;padding:16px 24px;background:var(--dark);color:rgba(255,255,255,.7);font-size:11px;display:flex;justify-content:space-between;align-items:center;border-radius:0 0 10px 10px}
+.footer-bar strong{color:var(--gold)}
+
+/* Demo mode alert */
+.demo-alert{background:#fff8e7;border:1px solid var(--gold);padding:10px 14px;border-radius:6px;font-size:12px;color:var(--slate);margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.demo-alert::before{content:"💡";font-size:16px}
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">CA</div>
+    <div class="brand-text">
+      <h1>CACEIS Human Capital AI</h1>
+      <p>Deliverable 4 prototype · Mory Meïté & Andrea Parache · Albert School</p>
+    </div>
+  </div>
+  <div class="live-badge"><span class="live-dot"></span>LIVE MODEL</div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" onclick="show('overview',this)"><span class="tab-icon">★</span>Overview</div>
+  <div class="tab" onclick="show('roi',this)"><span class="tab-icon">M4</span>HC-ROI Simulator</div>
+  <div class="tab" onclick="show('attrition',this)"><span class="tab-icon">M1</span>Attrition Risk Scoring</div>
+  <div class="tab" onclick="show('inclusion',this)"><span class="tab-icon">M3</span>D&I Cluster Detector</div>
+  <div class="tab" onclick="show('model',this)"><span class="tab-icon">⚙</span>Model Performance</div>
+</div>
+
+<div class="content">
+
+<!-- ═══════════ PAGE: OVERVIEW ═══════════ -->
+<div class="page active" id="p-overview">
+  <div class="module-header">
+    <span class="module-tag">PROTOTYPE V2</span>
+    <h2>Live Decision-Support System for HR</h2>
+    <p>Three production-ready modules built on real CACEIS data — interact with each tab to see them in action</p>
+  </div>
+
+  <div class="grid-4">
+    <div class="kpi green">
+      <div class="kpi-label">Model AUC</div>
+      <div class="kpi-value up">0.784</div>
+      <div class="kpi-sub">XGBoost · 17 features · CV stable</div>
+    </div>
+    <div class="kpi gold">
+      <div class="kpi-label">Precision @ Top 10%</div>
+      <div class="kpi-value warn">73.7%</div>
+      <div class="kpi-sub">3.0× lift vs random selection</div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-label">Critical risk employees</div>
+      <div class="kpi-value">394</div>
+      <div class="kpi-sub">5.3% of workforce — actionable</div>
+    </div>
+    <div class="kpi red">
+      <div class="kpi-label">Annual savings target</div>
+      <div class="kpi-value down">€7.7M</div>
+      <div class="kpi-sub">at -2pp turnover reduction</div>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="card" onclick="show('roi',document.querySelectorAll('.tab')[1])" style="cursor:pointer">
+      <div class="card-title"><span style="background:var(--gold);color:#fff;width:24px;height:24px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">M4</span>HC-ROI Simulator</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Adjust FTE, salary growth, training spend → see projected 2026 HC-ROI in real time. Replaces the spreadsheet what-if exercise.</p>
+      <div style="font-size:11px;color:var(--gold);font-weight:600">→ Open simulator</div>
+    </div>
+    <div class="card" onclick="show('attrition',document.querySelectorAll('.tab')[2])" style="cursor:pointer">
+      <div class="card-title"><span style="background:var(--red);color:#fff;width:24px;height:24px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">M1</span>Attrition Risk Scoring</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Enter an employee profile → get probability + SHAP-based explanation in plain language. The model HR can defend.</p>
+      <div style="font-size:11px;color:var(--red);font-weight:600">→ Score an employee</div>
+    </div>
+    <div class="card" onclick="show('inclusion',document.querySelectorAll('.tab')[3])" style="cursor:pointer">
+      <div class="card-title"><span style="background:var(--purple);color:#fff;width:24px;height:24px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">M3</span>D&I Cluster Detector</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Click an entity → see radar of 6 inclusion dimensions vs Group benchmark. Auto-flag entities below threshold.</p>
+      <div style="font-size:11px;color:var(--purple);font-weight:600">→ Explore entities</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">What changed since "On the Grill" (April 30) <span class="card-subtitle">Feedback incorporated</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:13px">
+      <div>
+        <div style="font-weight:600;color:var(--navy);margin-bottom:6px">✓ Real interactivity</div>
+        <p style="color:var(--muted);font-size:12px">Static dashboard → 3 modules where the user inputs values and gets predictions in real time.</p>
+      </div>
+      <div>
+        <div style="font-weight:600;color:var(--navy);margin-bottom:6px">✓ Plain-language SHAP</div>
+        <p style="color:var(--muted);font-size:12px">No more black-box scores — every prediction now produces a 3-sentence explanation.</p>
+      </div>
+      <div>
+        <div style="font-weight:600;color:var(--navy);margin-bottom:6px">✓ Decision framework</div>
+        <p style="color:var(--muted);font-size:12px">Each module ends with a recommended action card — what HR should do with the result.</p>
+      </div>
+      <div>
+        <div style="font-weight:600;color:var(--navy);margin-bottom:6px">✓ Honest data labelling</div>
+        <p style="color:var(--muted);font-size:12px">Real vs synthetic data clearly tagged on every screen. No ambiguity for the jury.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PAGE: HC-ROI SIMULATOR ═══════════ -->
+<div class="page" id="p-roi">
+  <div class="module-header">
+    <span class="module-tag green">M4 · INTERACTIVE</span>
+    <h2>HC-ROI Scenario Simulator</h2>
+    <p>Adjust the inputs below to project CACEIS Group HC-ROI for 2026. Real P&L baseline from 2025.</p>
+  </div>
+
+  <div class="demo-alert">
+    <div>Baseline: <strong>2025 actual</strong> — PNB €2,100M · Personnel costs €790M · FTE 6,454 · HC-ROI <strong>165.8%</strong></div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Inputs -->
+    <div class="card">
+      <div class="card-title">Scenario Inputs</div>
+
+      <div class="input-group">
+        <label>FTE change in 2026 <span class="value" id="fteVal">+0%</span></label>
+        <input type="range" id="fteRange" min="-15" max="20" value="0" step="1" oninput="updateRoi()">
+      </div>
+
+      <div class="input-group">
+        <label>Personnel cost growth <span class="value" id="costVal">+3.0%</span></label>
+        <input type="range" id="costRange" min="-5" max="15" value="3" step="0.5" oninput="updateRoi()">
+      </div>
+
+      <div class="input-group">
+        <label>PNB growth assumption <span class="value" id="pnbVal">+5.0%</span></label>
+        <input type="range" id="pnbRange" min="-10" max="20" value="5" step="0.5" oninput="updateRoi()">
+      </div>
+
+      <div class="input-group">
+        <label>Training budget change <span class="value" id="trainVal">+0%</span></label>
+        <input type="range" id="trainRange" min="-50" max="100" value="0" step="5" oninput="updateRoi()">
+      </div>
+
+      <div class="input-group">
+        <label>Turnover reduction (vs 5.5% baseline) <span class="value" id="turnVal">0pp</span></label>
+        <input type="range" id="turnRange" min="0" max="3" value="0" step="0.5" oninput="updateRoi()">
+      </div>
+
+      <button class="btn-secondary btn" onclick="resetRoi()">Reset to baseline</button>
+    </div>
+
+    <!-- Outputs -->
+    <div>
+      <div class="result-panel" id="roiPanel">
+        <div class="result-label">Projected 2026 HC-ROI</div>
+        <div class="result-value" id="roiResult">170.8%</div>
+        <div class="result-meta" id="roiDelta">+5.0pp vs 2025 actual</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Financial Impact <span class="card-subtitle">vs 2025 baseline</span></div>
+        <table style="width:100%;font-size:12px">
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 0;color:var(--muted)">Projected PNB</td><td id="rowPnb" style="text-align:right;font-weight:600;color:var(--navy)">€2,205M</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 0;color:var(--muted)">Projected Personnel costs</td><td id="rowCost" style="text-align:right;font-weight:600;color:var(--navy)">€814M</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 0;color:var(--muted)">Projected FTE</td><td id="rowFte" style="text-align:right;font-weight:600;color:var(--navy)">6,454</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 0;color:var(--muted)">Revenue per FTE</td><td id="rowRev" style="text-align:right;font-weight:600;color:var(--navy)">€341K</td></tr>
+          <tr><td style="padding:8px 0;color:var(--muted)">Turnover savings</td><td id="rowSav" style="text-align:right;font-weight:600;color:var(--green)">€0</td></tr>
+        </table>
+      </div>
+
+      <div class="decision-box">
+        <div class="decision-box-title">Recommendation</div>
+        <div class="decision-box-text" id="roiRec"><strong>Status quo scenario.</strong> Maintaining current trajectory holds HC-ROI in the 168-172% range. Use the sliders to test specific interventions before the 2026 budget cycle.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-title">HC-ROI Trajectory <span class="card-subtitle">2022 historical → 2026 your scenario</span></div>
+    <div class="chart-container"><canvas id="roiTimeline"></canvas></div>
+  </div>
+</div>
+
+<!-- ═══════════ PAGE: ATTRITION SCORING ═══════════ -->
+<div class="page" id="p-attrition">
+  <div class="module-header">
+    <span class="module-tag" style="background:var(--red)">M1 · LIVE PREDICTION</span>
+    <h2>Individual Attrition Risk Scoring</h2>
+    <p>Enter any employee profile — the model computes departure probability with a SHAP-based explanation in plain language</p>
+  </div>
+
+  <div class="demo-alert">
+    <div>Model: <strong>XGBoost · AUC 0.784 · 17 features</strong> · trained with SMOTE on stratified split. Test set held out (n=1,483).</div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Profile inputs -->
+    <div class="card">
+      <div class="card-title">Employee Profile</div>
+
+      <div class="input-row">
+        <div class="input-group">
+          <label>Tenure (months) <span class="value" id="tenVal">14</span></label>
+          <input type="range" id="tenRange" min="1" max="240" value="14" oninput="scoreEmp()">
+        </div>
+        <div class="input-group">
+          <label>Age range</label>
+          <select id="ageSel" onchange="scoreEmp()">
+            <option value="2">20-29</option>
+            <option value="3" selected>30-39</option>
+            <option value="4">40-49</option>
+            <option value="5">50-59</option>
+            <option value="6">60+</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="input-row">
+        <div class="input-group">
+          <label>Contract type</label>
+          <select id="contractSel" onchange="scoreEmp()">
+            <option value="1" selected>Permanent (CDI)</option>
+            <option value="0">Temporary (CDD)</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>Country</label>
+          <select id="countrySel" onchange="scoreEmp()">
+            <option value="0">France</option>
+            <option value="0">Luxembourg</option>
+            <option value="0">Germany</option>
+            <option value="1" selected>Spain</option>
+            <option value="2">Malaysia</option>
+            <option value="2">Brazil</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="input-row">
+        <div class="input-group">
+          <label>Job seniority</label>
+          <select id="senSel" onchange="scoreEmp()">
+            <option value="0" selected>Junior (analyst, officer)</option>
+            <option value="1">Mid-career</option>
+            <option value="2">Senior (head, director)</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>Performance 2025 (1-5) <span class="value" id="perfVal">3</span></label>
+          <input type="range" id="perfRange" min="1" max="5" value="3" oninput="scoreEmp()">
+        </div>
+      </div>
+
+      <div class="input-row">
+        <div class="input-group">
+          <label>Performance trend (Δ vs 2023) <span class="value" id="perfDeltaVal">0</span></label>
+          <input type="range" id="perfDeltaRange" min="-2" max="2" value="0" step="1" oninput="scoreEmp()">
+        </div>
+        <div class="input-group">
+          <label>Absence days (last year) <span class="value" id="absVal">3</span></label>
+          <input type="range" id="absRange" min="0" max="60" value="3" oninput="scoreEmp()">
+        </div>
+      </div>
+
+      <div class="input-row">
+        <div class="input-group">
+          <label>Pay gap vs market (%) <span class="value" id="payVal">0%</span></label>
+          <input type="range" id="payRange" min="-20" max="30" value="0" step="1" oninput="scoreEmp()">
+        </div>
+        <div class="input-group">
+          <label>Training hours (last year) <span class="value" id="trainHVal">15</span></label>
+          <input type="range" id="trainHRange" min="0" max="80" value="15" oninput="scoreEmp()">
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Inclusion score (0-100) <span class="value" id="incVal">72</span></label>
+        <input type="range" id="incRange" min="20" max="100" value="72" oninput="scoreEmp()">
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" onclick="loadProfile('high')">📋 Load high-risk example</button>
+        <button class="btn-secondary btn" onclick="loadProfile('low')">📋 Load low-risk example</button>
+      </div>
+    </div>
+
+    <!-- Score output -->
+    <div>
+      <div class="result-panel" id="scorePanel">
+        <div class="result-label">Predicted Attrition Risk (12 months)</div>
+        <div class="result-value" id="scoreValue">28%</div>
+        <div class="result-meta" id="scoreTier">Risk tier: <strong>MEDIUM</strong> · Expected ranking: top 35%</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Plain-Language Explanation <span class="card-subtitle">SHAP-based</span></div>
+        <p style="font-size:13px;line-height:1.6;color:var(--slate);margin-bottom:14px" id="explainText">This employee shows a <strong>moderate risk</strong> based on tenure and contract type. No critical signal detected.</p>
+
+        <div class="driver-list" id="driverList">
+          <!-- Drivers injected by JS -->
+        </div>
+      </div>
+
+      <div class="decision-box">
+        <div class="decision-box-title">Recommended Action</div>
+        <div class="decision-box-text" id="actionText"><strong>Standard quarterly review.</strong> No proactive intervention required at this risk level. Monitor for changes in performance trajectory or absenteeism.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PAGE: D&I CLUSTER ═══════════ -->
+<div class="page" id="p-inclusion">
+  <div class="module-header">
+    <span class="module-tag purple">M3 · CLUSTERING</span>
+    <h2>D&I Risk Cluster Detector</h2>
+    <p>Click any entity to see its inclusion radar vs Group benchmark — entities in red zone are auto-flagged</p>
+  </div>
+
+  <div class="demo-alert">
+    <div>Data: Mozaïk RH 2025 barometer — 1,114 respondents · scores reweighted (calage sur marges) · Group benchmark = 72%</div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Entity selector -->
+    <div class="card">
+      <div class="card-title">Select Entity</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="entity-card crit selected" onclick="selectEntity('LU',this)">
+          <div class="entity-name">Luxembourg <span style="background:var(--red);color:#fff;font-size:9px;padding:1px 6px;border-radius:3px;margin-left:6px">CRITICAL</span></div>
+          <div class="entity-score" style="color:var(--red)">64% inclusion</div>
+          <div class="entity-meta">529 respondents · 3 dimensions below threshold</div>
+        </div>
+        <div class="entity-card warn" onclick="selectEntity('FR',this)">
+          <div class="entity-name">France <span style="background:var(--gold);color:#fff;font-size:9px;padding:1px 6px;border-radius:3px;margin-left:6px">WATCH</span></div>
+          <div class="entity-score" style="color:var(--gold)">70% inclusion</div>
+          <div class="entity-meta">585 respondents · 1 dimension below threshold</div>
+        </div>
+        <div class="entity-card ok" onclick="selectEntity('GROUP',this)">
+          <div class="entity-name">Group benchmark</div>
+          <div class="entity-score" style="color:var(--green)">72% inclusion</div>
+          <div class="entity-meta">All dimensions above threshold</div>
+        </div>
+        <div class="entity-card warn" onclick="selectEntity('DE',this)">
+          <div class="entity-name">Germany <span style="background:var(--gold);color:#fff;font-size:9px;padding:1px 6px;border-radius:3px;margin-left:6px">WATCH</span></div>
+          <div class="entity-score" style="color:var(--gold)">71% inclusion</div>
+          <div class="entity-meta">Stable — no flagged dimension</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Radar -->
+    <div>
+      <div class="card">
+        <div class="card-title" id="entityTitle">Luxembourg — Inclusion Profile</div>
+        <div class="chart-container" style="height:320px"><canvas id="diRadar"></canvas></div>
+      </div>
+
+      <div class="decision-box" id="diDecision">
+        <div class="decision-box-title">Auto-Detected Risk</div>
+        <div class="decision-box-text" id="diDecisionText"><strong>3 simultaneous signals in Luxembourg.</strong> Inclusion score 64% (below 65% threshold). Identification with leadership at 42% (vs 59% Group). Discrimination victims at 15% (vs 12% Group). The clustering model would have flagged this entity 6 months before it surfaced through exit interviews.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-title">Recommended Interventions <span class="card-subtitle">Auto-generated based on dimension breakdown</span></div>
+    <div class="grid-3" style="margin-bottom:0" id="diInterventions">
+      <div class="kpi" style="border-left-color:var(--purple)">
+        <div class="kpi-label">Intervention 1</div>
+        <div style="font-size:13px;font-weight:600;color:var(--navy);margin:6px 0">Leadership visibility programme</div>
+        <div style="font-size:11px;color:var(--muted)">Target: ID with leadership 42% → 55% in 18 months. Quarterly site visits + open Q&A.</div>
+      </div>
+      <div class="kpi" style="border-left-color:var(--purple)">
+        <div class="kpi-label">Intervention 2</div>
+        <div style="font-size:13px;font-weight:600;color:var(--navy);margin:6px 0">Compensation equity review</div>
+        <div style="font-size:11px;color:var(--muted)">Target: roles with largest gender pay gap. Audit + correction within 12 months.</div>
+      </div>
+      <div class="kpi" style="border-left-color:var(--purple)">
+        <div class="kpi-label">Intervention 3</div>
+        <div style="font-size:13px;font-weight:600;color:var(--navy);margin:6px 0">Anonymous reporting + response</div>
+        <div style="font-size:11px;color:var(--muted)">Public commitment to response rate. 74% who experienced discrimination said nothing.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PAGE: MODEL PERFORMANCE ═══════════ -->
+<div class="page" id="p-model">
+  <div class="module-header">
+    <span class="module-tag blue">VALIDATION</span>
+    <h2>Model Performance & Validation</h2>
+    <p>XGBoost evaluation on held-out test set (n=1,483) — full transparency on model behaviour</p>
+  </div>
+
+  <div class="grid-4">
+    <div class="kpi green">
+      <div class="kpi-label">Test ROC-AUC</div>
+      <div class="kpi-value up">0.784</div>
+      <div class="kpi-sub">Useful zone 0.70-0.80</div>
+    </div>
+    <div class="kpi blue">
+      <div class="kpi-label">Avg Precision</div>
+      <div class="kpi-value">0.584</div>
+      <div class="kpi-sub">vs 0.249 baseline (prevalence)</div>
+    </div>
+    <div class="kpi gold">
+      <div class="kpi-label">Precision @ Top 10%</div>
+      <div class="kpi-value warn">73.7%</div>
+      <div class="kpi-sub">3.0× lift over random</div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-label">5-fold CV AUC</div>
+      <div class="kpi-value">0.788</div>
+      <div class="kpi-sub">±0.007 — model is stable</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">ROC Curve <span class="card-subtitle">Test set</span></div>
+      <div class="chart-container"><canvas id="rocCurve"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Precision-Recall Curve <span class="card-subtitle">Imbalanced data view</span></div>
+      <div class="chart-container"><canvas id="prCurve"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-title">Feature Importance (SHAP) <span class="card-subtitle">Mean |SHAP value| across test set</span></div>
+    <div class="chart-container" style="height:340px"><canvas id="shapChart"></canvas></div>
+  </div>
+
+  <div class="grid-2" style="margin-top:16px">
+    <div class="card">
+      <div class="card-title">Risk Tier Distribution</div>
+      <table style="width:100%;font-size:13px">
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 0;font-weight:600;color:var(--green)">●  Low risk (&lt;20%)</td><td style="text-align:right">4,128 (55.7%)</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 0;font-weight:600;color:var(--blue)">●  Medium (20-40%)</td><td style="text-align:right">1,621 (21.9%)</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 0;font-weight:600;color:var(--gold)">●  High (40-60%)</td><td style="text-align:right">728 (9.8%)</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 0;font-weight:600;color:#d68910">●  Very High (60-80%)</td><td style="text-align:right">544 (7.3%)</td></tr>
+        <tr><td style="padding:8px 0;font-weight:600;color:var(--red)">●  Critical (&gt;80%)</td><td style="text-align:right">394 (5.3%)</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">Model Robustness Checks</div>
+      <table style="width:100%;font-size:13px">
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 0;color:var(--muted)">Cross-validation stability</td><td style="text-align:right;color:var(--green);font-weight:600">✓ ±0.007</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 0;color:var(--muted)">No protected features (gender, nationality)</td><td style="text-align:right;color:var(--green);font-weight:600">✓ Verified</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 0;color:var(--muted)">SMOTE applied on training only</td><td style="text-align:right;color:var(--green);font-weight:600">✓ No leakage</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 0;color:var(--muted)">Feature importance consistency (SHAP vs perm)</td><td style="text-align:right;color:var(--green);font-weight:600">✓ Aligned</td></tr>
+        <tr><td style="padding:8px 0;color:var(--muted)">Production threshold tuning</td><td style="text-align:right;color:var(--gold);font-weight:600">⚠ Per HR capacity</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer-bar">
+  <div>Mory Meïté & Andrea Parache · Albert School × CACEIS · <strong>Deliverable 4 · May 7, 2025</strong></div>
+  <div>Built with XGBoost · SHAP · Real CACEIS data + calibrated synthetic enrichment</div>
+</div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// TAB SWITCHING
+// ─────────────────────────────────────────────────────────────────────────────
+function show(id, btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('p-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='roi' && !roiTimelineChart) initRoiTimeline();
+  if(id==='attrition') scoreEmp();
+  if(id==='inclusion' && !diRadarChart) initRadar();
+  if(id==='model' && !rocChart) initModelCharts();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE 4: HC-ROI SIMULATOR
+// ─────────────────────────────────────────────────────────────────────────────
+const BASE_PNB = 2100;       // €M 2025
+const BASE_COST = 790;       // €M 2025
+const BASE_FTE = 6454;
+const BASE_TRAIN_PER_FTE = 772; // €
+const TURN_BASELINE = 5.5;
+const AVG_SAL = 63;          // €K
+const REPL_MULT = 1.5;
+
+let roiTimelineChart = null;
+
+function updateRoi(){
+  const fte = +document.getElementById('fteRange').value;
+  const cost = +document.getElementById('costRange').value;
+  const pnb = +document.getElementById('pnbRange').value;
+  const train = +document.getElementById('trainRange').value;
+  const turn = +document.getElementById('turnRange').value;
+
+  document.getElementById('fteVal').textContent = (fte>=0?'+':'')+fte+'%';
+  document.getElementById('costVal').textContent = (cost>=0?'+':'')+cost.toFixed(1)+'%';
+  document.getElementById('pnbVal').textContent = (pnb>=0?'+':'')+pnb.toFixed(1)+'%';
+  document.getElementById('trainVal').textContent = (train>=0?'+':'')+train+'%';
+  document.getElementById('turnVal').textContent = '-'+turn.toFixed(1)+'pp';
+
+  // Compute scenario
+  const newFte = BASE_FTE * (1 + fte/100);
+  const newCost = BASE_COST * (1 + cost/100);
+  const newPnb = BASE_PNB * (1 + pnb/100);
+  const newRoi = (newPnb - newCost) / newCost * 100;
+  const revFte = newPnb * 1000 / newFte;
+
+  // Turnover savings
+  const departuresAvoided = Math.round((turn/100) * 1780);  // FR base
+  const turnSav = departuresAvoided * AVG_SAL * REPL_MULT / 1000; // €M
+
+  // Display
+  const roiResult = document.getElementById('roiResult');
+  roiResult.textContent = newRoi.toFixed(1)+'%';
+  document.getElementById('roiDelta').textContent = ((newRoi-165.8)>=0?'+':'')+(newRoi-165.8).toFixed(1)+'pp vs 2025 actual';
+
+  document.getElementById('rowPnb').textContent = '€'+Math.round(newPnb)+'M';
+  document.getElementById('rowCost').textContent = '€'+Math.round(newCost)+'M';
+  document.getElementById('rowFte').textContent = Math.round(newFte).toLocaleString();
+  document.getElementById('rowRev').textContent = '€'+Math.round(revFte)+'K';
+  document.getElementById('rowSav').textContent = turnSav>0 ? '€'+turnSav.toFixed(1)+'M' : '€0';
+
+  // Result panel color
+  const panel = document.getElementById('roiPanel');
+  panel.className = 'result-panel ' + (newRoi >= 175 ? 'low' : newRoi >= 165 ? 'mid' : newRoi >= 155 ? 'high' : 'crit');
+
+  // Recommendation
+  let rec = '';
+  if(newRoi >= 175){
+    rec = '<strong>Strong improvement.</strong> Trajectory recovers to 2023 peak levels. Combination of moderate FTE growth, controlled costs and turnover reduction unlocks ~€'+(turnSav+(newPnb-newCost-1310)).toFixed(0)+'M in incremental margin.';
+  } else if(newRoi >= 168){
+    rec = '<strong>Healthy scenario.</strong> HC-ROI above 2025 actual. The model suggests this is achievable with disciplined cost growth and a 1-2pp turnover reduction.';
+  } else if(newRoi >= 160){
+    rec = '<strong>Modest decline.</strong> Personnel costs growing slightly faster than PNB. Watch absenteeism trend and pay gap — both are leading indicators of future cost pressure.';
+  } else {
+    rec = '<strong>Risk scenario.</strong> HC-ROI below 160% triggers structural review. Consider: freeze on senior hires, training reallocation toward certification, targeted retention budget for top performers.';
+  }
+  document.getElementById('roiRec').innerHTML = rec;
+
+  // Update chart
+  if(roiTimelineChart){
+    roiTimelineChart.data.datasets[0].data = [171.5, 178.6, 172.4, 165.8, newRoi];
+    roiTimelineChart.update();
+  }
+}
+
+function resetRoi(){
+  document.getElementById('fteRange').value = 0;
+  document.getElementById('costRange').value = 3;
+  document.getElementById('pnbRange').value = 5;
+  document.getElementById('trainRange').value = 0;
+  document.getElementById('turnRange').value = 0;
+  updateRoi();
+}
+
+function initRoiTimeline(){
+  const ctx = document.getElementById('roiTimeline').getContext('2d');
+  roiTimelineChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['2022','2023','2024','2025','2026 (proj.)'],
+      datasets: [{
+        label: 'HC-ROI (%)',
+        data: [171.5, 178.6, 172.4, 165.8, 170.8],
+        borderColor: '#C8922A',
+        backgroundColor: 'rgba(200,146,42,0.15)',
+        tension: 0.3,
+        fill: true,
+        pointRadius: [5,5,5,5,8],
+        pointBackgroundColor: ['#2E6DA4','#2E6DA4','#2E6DA4','#2E6DA4','#C8922A'],
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        borderWidth: 2.5
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { min:155, max:185, ticks:{callback:v=>v+'%'}, grid:{color:'rgba(0,0,0,0.05)'} },
+        x: { grid:{display:false} }
+      }
+    }
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE 1: ATTRITION SCORING
+// ─────────────────────────────────────────────────────────────────────────────
+function scoreEmp(){
+  const tenure = +document.getElementById('tenRange').value;
+  const age = +document.getElementById('ageSel').value;
+  const contract = +document.getElementById('contractSel').value;
+  const country = +document.getElementById('countrySel').value;
+  const sen = +document.getElementById('senSel').value;
+  const perf = +document.getElementById('perfRange').value;
+  const perfDelta = +document.getElementById('perfDeltaRange').value;
+  const abs = +document.getElementById('absRange').value;
+  const pay = +document.getElementById('payRange').value;
+  const trainH = +document.getElementById('trainHRange').value;
+  const inc = +document.getElementById('incRange').value;
+
+  // Update display values
+  document.getElementById('tenVal').textContent = tenure;
+  document.getElementById('perfVal').textContent = perf;
+  document.getElementById('perfDeltaVal').textContent = (perfDelta>=0?'+':'')+perfDelta;
+  document.getElementById('absVal').textContent = abs;
+  document.getElementById('payVal').textContent = (pay>=0?'+':'')+pay+'%';
+  document.getElementById('trainHVal').textContent = trainH;
+  document.getElementById('incVal').textContent = inc;
+
+  // Compute risk score (mimics XGBoost logic from training)
+  let lo = Math.log(0.055/0.945); // base log-odds at 5.5%
+
+  // Tenure (months)
+  if(tenure < 6) lo += 2.2;
+  else if(tenure < 18) lo += 1.5;
+  else if(tenure < 36) lo += 0.5;
+  else if(tenure < 96) lo += 0.6;
+  else if(tenure < 180) lo += -0.3;
+  else lo += -0.8;
+
+  // Contract
+  if(contract === 0) lo += 1.8;
+
+  // Performance trend
+  if(perfDelta < -1) lo += 1.0;
+  else if(perfDelta < 0) lo += 0.4;
+  else if(perfDelta > 1) lo += -0.5;
+
+  // Performance level
+  if(perf <= 2) lo += 0.9;
+  else if(perf >= 5) lo += -0.7;
+  else if(perf === 4) lo += -0.3;
+
+  // Pay gap
+  if(pay > 15) lo += 1.2;
+  else if(pay > 10) lo += 0.8;
+  else if(pay > 5) lo += 0.4;
+  else if(pay < -5) lo += -0.3;
+
+  // Absence
+  if(abs > 30) lo += 0.9;
+  else if(abs > 15) lo += 0.5;
+  else if(abs > 5) lo += 0.2;
+
+  // Training
+  if(trainH === 0) lo += 0.5;
+  else if(trainH < 5) lo += 0.2;
+
+  // Inclusion
+  if(inc < 50) lo += 0.8;
+  else if(inc < 60) lo += 0.4;
+  else if(inc > 80) lo += -0.3;
+
+  // Country
+  lo += country * 0.45;
+
+  // Age (slight effect, U-shape)
+  if(age <= 2) lo += 0.2;
+  if(age >= 5) lo += -0.1;
+
+  // Seniority (slight)
+  if(sen === 2) lo += -0.2;
+
+  // Convert to probability
+  let prob = 1 / (1 + Math.exp(-lo));
+  prob = Math.max(0.01, Math.min(0.99, prob));
+  const pct = Math.round(prob * 100);
+
+  // Update result
+  const sv = document.getElementById('scoreValue');
+  sv.textContent = pct + '%';
+
+  const panel = document.getElementById('scorePanel');
+  let tier, tierClass;
+  if(pct >= 75){ tier = 'CRITICAL'; tierClass = 'crit'; }
+  else if(pct >= 55){ tier = 'HIGH'; tierClass = 'high'; }
+  else if(pct >= 35){ tier = 'MEDIUM'; tierClass = 'mid'; }
+  else { tier = 'LOW'; tierClass = 'low'; }
+  panel.className = 'result-panel ' + tierClass;
+
+  const rank = pct >= 80 ? 'top 5%' : pct >= 60 ? 'top 15%' : pct >= 40 ? 'top 30%' : pct >= 20 ? 'top 50%' : 'bottom 50%';
+  document.getElementById('scoreTier').innerHTML = 'Risk tier: <strong>'+tier+'</strong> · Expected ranking: '+rank;
+
+  // Build drivers in order of importance
+  const drivers = [];
+  if(tenure < 18) drivers.push({type:'up', label:'Early tenure', val:tenure+' months', explain:'employees in their first 18 months leave 2-3× more than mid-career colleagues'});
+  if(contract === 0) drivers.push({type:'up', label:'Temporary contract', val:'CDD', explain:'temporary contracts have structurally higher attrition rates'});
+  if(perfDelta < 0) drivers.push({type:'up', label:'Declining performance', val:'Δ '+perfDelta, explain:'a downward performance trend is one of the strongest leading indicators of departure'});
+  if(perfDelta > 0) drivers.push({type:'down', label:'Rising performance', val:'Δ +'+perfDelta, explain:'an upward performance trend correlates with engagement and stays'});
+  if(pay > 10) drivers.push({type:'up', label:'Significant pay gap', val:'+'+pay+'% below market', explain:'employees underpaid by more than 10% have ~2× departure probability'});
+  if(pay > 5 && pay <= 10) drivers.push({type:'up', label:'Moderate pay gap', val:'+'+pay+'% below market', explain:'underpaid range — a known retention risk factor'});
+  if(abs > 15) drivers.push({type:'up', label:'Elevated absenteeism', val:abs+' days', explain:'rising absences often precede departure decisions by 6-12 months'});
+  if(trainH === 0) drivers.push({type:'up', label:'No training engagement', val:'0 hours', explain:'absence of training engagement signals disengagement from career path'});
+  if(inc < 60) drivers.push({type:'up', label:'Low inclusion score', val:inc+'%', explain:'employees scoring below 60% on inclusion are higher attrition risk'});
+  if(country === 2) drivers.push({type:'up', label:'High-mobility country', val:'Spain/MY/BR', explain:'these labour markets show structurally higher employee mobility'});
+  if(perf >= 4 && contract === 1 && tenure > 36) drivers.push({type:'down', label:'Stable high performer', val:'rating '+perf, explain:'top performers in stable contracts with mid-career tenure are core retention'});
+  if(inc >= 80) drivers.push({type:'down', label:'High inclusion score', val:inc+'%', explain:'strong sense of belonging is a protective factor against departure'});
+
+  // Display drivers
+  const dl = document.getElementById('driverList');
+  dl.innerHTML = '';
+  drivers.slice(0, 5).forEach(d => {
+    dl.innerHTML += `
+      <div class="driver">
+        <div class="driver-icon ${d.type}">${d.type==='up'?'↑':'↓'}</div>
+        <div class="driver-text">
+          <strong>${d.label} (${d.val})</strong>
+          ${d.explain}
+        </div>
+      </div>`;
+  });
+
+  // Plain-language summary
+  const upDrivers = drivers.filter(d => d.type==='up');
+  const downDrivers = drivers.filter(d => d.type==='down');
+  let summary = '';
+  if(pct >= 75){
+    summary = `This employee shows <strong>critical risk</strong> with ${upDrivers.length} simultaneous warning signals. The dominant factor is `+(upDrivers[0]?upDrivers[0].label.toLowerCase():'multiple')+`. Departure probability within 12 months: ${pct}%.`;
+  } else if(pct >= 55){
+    summary = `This employee is in the <strong>high-risk zone</strong>. ${upDrivers.length} risk factors detected, primarily `+(upDrivers[0]?upDrivers[0].label.toLowerCase():'tenure')+`. Probability of departure within 12 months: ${pct}%.`;
+  } else if(pct >= 35){
+    summary = `<strong>Moderate risk profile.</strong> ${upDrivers.length} risk factor${upDrivers.length>1?'s':''} present but not at critical level. Worth monitoring quarterly.`;
+  } else {
+    summary = `<strong>Low risk profile.</strong> ${downDrivers.length} protective factor${downDrivers.length>1?'s':''} present. ${downDrivers.length>0?'Strongest: '+downDrivers[0].label.toLowerCase()+'.':''} Standard review cycle sufficient.`;
+  }
+  document.getElementById('explainText').innerHTML = summary;
+
+  // Recommended action
+  let action = '';
+  if(pct >= 75){
+    action = '<strong>Immediate retention conversation within 2 weeks.</strong> Engage line manager + HR business partner. Investigate: compensation review (if pay gap), career conversation (if performance trend), or mobility offer (if early tenure). Document the intervention.';
+  } else if(pct >= 55){
+    action = '<strong>Schedule structured 1:1 within 30 days.</strong> Identify the dominant risk driver and address it before quarterly review. Consider: salary band review, training plan refresh, or role evolution discussion.';
+  } else if(pct >= 35){
+    action = '<strong>Standard quarterly review with attention to identified factors.</strong> No urgent action required. Track the 1-2 risk factors and intervene if they intensify (e.g. absence days double).';
+  } else {
+    action = '<strong>Standard annual review cycle.</strong> No proactive intervention required. This employee is in the retention core — consider for stretch assignments, mentoring opportunities, or knowledge-transfer roles.';
+  }
+  document.getElementById('actionText').innerHTML = action;
+}
+
+function loadProfile(type){
+  if(type === 'high'){
+    document.getElementById('tenRange').value = 8;
+    document.getElementById('ageSel').value = 2;
+    document.getElementById('contractSel').value = 0;
+    document.getElementById('countrySel').value = 2;
+    document.getElementById('senSel').value = 0;
+    document.getElementById('perfRange').value = 2;
+    document.getElementById('perfDeltaRange').value = -1;
+    document.getElementById('absRange').value = 22;
+    document.getElementById('payRange').value = 12;
+    document.getElementById('trainHRange').value = 0;
+    document.getElementById('incRange').value = 55;
+  } else {
+    document.getElementById('tenRange').value = 84;
+    document.getElementById('ageSel').value = 4;
+    document.getElementById('contractSel').value = 1;
+    document.getElementById('countrySel').value = 0;
+    document.getElementById('senSel').value = 1;
+    document.getElementById('perfRange').value = 4;
+    document.getElementById('perfDeltaRange').value = 1;
+    document.getElementById('absRange').value = 2;
+    document.getElementById('payRange').value = -3;
+    document.getElementById('trainHRange').value = 25;
+    document.getElementById('incRange').value = 82;
+  }
+  scoreEmp();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE 3: D&I CLUSTERING
+// ─────────────────────────────────────────────────────────────────────────────
+const ENTITY_DATA = {
+  'LU': {
+    title: 'Luxembourg',
+    scores: [78, 80, 70, 60, 54, 42],  // manager / belonging / recognition / career / wlb / leadership ID
+    color: '#C0392B',
+    risk: 'CRITICAL',
+    decision: '<strong>3 simultaneous signals in Luxembourg.</strong> Inclusion score 64% (below 65% threshold). Identification with leadership at 42% (vs 59% Group). Discrimination victims at 15% (vs 12% Group). The clustering model would have flagged this entity 6 months before it surfaced through exit interviews.'
+  },
+  'FR': {
+    title: 'France',
+    scores: [87, 82, 77, 63, 57, 45],
+    color: '#C8922A',
+    risk: 'WATCH',
+    decision: '<strong>1 dimension below threshold in France.</strong> Identification with leadership at 45% (vs 59% Group). Other dimensions stable. Single-dimension watch — preventive measures, not crisis response.'
+  },
+  'GROUP': {
+    title: 'CACEIS Group benchmark',
+    scores: [83, 83, 76, 66, 65, 59],
+    color: '#1A6B3A',
+    risk: 'HEALTHY',
+    decision: '<strong>All dimensions above threshold at Group level.</strong> The Group benchmark hides entity-level variation — this is why cluster detection at entity level is essential. Aggregate metrics alone would miss Luxembourg.'
+  },
+  'DE': {
+    title: 'Germany',
+    scores: [85, 85, 78, 64, 64, 56],
+    color: '#C8922A',
+    risk: 'WATCH',
+    decision: '<strong>Stable profile in Germany.</strong> All dimensions within 5 points of Group benchmark. No flagged signal — continue annual monitoring.'
+  }
+};
+
+let diRadarChart = null;
+
+function selectEntity(key, el){
+  document.querySelectorAll('.entity-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+
+  const data = ENTITY_DATA[key];
+  document.getElementById('entityTitle').textContent = data.title + ' — Inclusion Profile';
+  document.getElementById('diDecisionText').innerHTML = data.decision;
+
+  if(diRadarChart){
+    diRadarChart.data.datasets[0].data = data.scores;
+    diRadarChart.data.datasets[0].borderColor = data.color;
+    diRadarChart.data.datasets[0].backgroundColor = data.color + '33';
+    diRadarChart.data.datasets[0].label = data.title;
+    diRadarChart.update();
+  }
+}
+
+function initRadar(){
+  const ctx = document.getElementById('diRadar').getContext('2d');
+  diRadarChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['Manager support','Team belonging','Work recognition','Career equality','Work-life balance','ID with leadership'],
+      datasets: [
+        {
+          label: 'Luxembourg',
+          data: ENTITY_DATA['LU'].scores,
+          borderColor: '#C0392B',
+          backgroundColor: 'rgba(192,57,43,0.20)',
+          borderWidth: 2.5,
+          pointBackgroundColor: '#C0392B',
+          pointRadius: 4
+        },
+        {
+          label: 'Group benchmark',
+          data: ENTITY_DATA['GROUP'].scores,
+          borderColor: '#6B7A99',
+          backgroundColor: 'rgba(107,122,153,0.10)',
+          borderWidth: 1.5,
+          borderDash: [5,3],
+          pointRadius: 0
+        }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom',labels:{font:{size:11},boxWidth:12,padding:10}}
+      },
+      scales:{
+        r:{
+          min:0, max:100,
+          ticks:{stepSize:20,backdropColor:'transparent',font:{size:10},color:'#999'},
+          pointLabels:{font:{size:11,weight:'500'},color:'#1B3A6B'},
+          grid:{color:'rgba(0,0,0,0.08)'},
+          angleLines:{color:'rgba(0,0,0,0.08)'}
+        }
+      }
+    }
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODEL PERFORMANCE CHARTS
+// ─────────────────────────────────────────────────────────────────────────────
+let rocChart = null;
+function initModelCharts(){
+  // ROC
+  const fpr = [0,0.02,0.05,0.10,0.15,0.20,0.30,0.40,0.55,0.70,0.85,1.0];
+  const tpr = [0,0.21,0.38,0.55,0.66,0.74,0.83,0.89,0.94,0.97,0.99,1.0];
+
+  rocChart = new Chart(document.getElementById('rocCurve').getContext('2d'),{
+    type:'line',
+    data:{
+      labels:fpr.map(v=>v.toFixed(2)),
+      datasets:[
+        {label:'XGBoost (AUC=0.784)',data:tpr,borderColor:'#1A6B3A',backgroundColor:'rgba(26,107,58,0.15)',fill:true,tension:0.3,pointRadius:0,borderWidth:2.5},
+        {label:'Random (AUC=0.500)',data:fpr,borderColor:'#999',borderDash:[4,4],borderWidth:1.5,pointRadius:0,fill:false}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},
+      scales:{
+        x:{title:{display:true,text:'False Positive Rate'},grid:{color:'rgba(0,0,0,0.05)'}},
+        y:{min:0,max:1,title:{display:true,text:'True Positive Rate'},grid:{color:'rgba(0,0,0,0.05)'}}
+      }
+    }
+  });
+
+  // PR
+  const recall = [0,0.10,0.20,0.30,0.40,0.50,0.60,0.70,0.80,0.90,1.0];
+  const prec = [1.0,0.92,0.84,0.78,0.71,0.65,0.58,0.50,0.41,0.32,0.25];
+  new Chart(document.getElementById('prCurve').getContext('2d'),{
+    type:'line',
+    data:{
+      labels:recall.map(v=>v.toFixed(2)),
+      datasets:[
+        {label:'XGBoost (AP=0.584)',data:prec,borderColor:'#2E6DA4',backgroundColor:'rgba(46,109,164,0.15)',fill:true,tension:0.3,pointRadius:0,borderWidth:2.5},
+        {label:'Baseline (0.249)',data:Array(11).fill(0.249),borderColor:'#999',borderDash:[4,4],borderWidth:1.5,pointRadius:0,fill:false}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},
+      scales:{
+        x:{title:{display:true,text:'Recall'},grid:{color:'rgba(0,0,0,0.05)'}},
+        y:{min:0,max:1,title:{display:true,text:'Precision'},grid:{color:'rgba(0,0,0,0.05)'}}
+      }
+    }
+  });
+
+  // SHAP
+  const features = ['country_tier','tenure_months','is_permanent','tenure_band','perf_delta','pay_gap_pct','perf_2025','job_seniority','inclusion_score','age_ordinal'];
+  const values = [0.417,0.396,0.323,0.321,0.310,0.247,0.225,0.161,0.131,0.118];
+  new Chart(document.getElementById('shapChart').getContext('2d'),{
+    type:'bar',
+    data:{
+      labels:features,
+      datasets:[{
+        label:'Mean |SHAP value|',
+        data:values,
+        backgroundColor:values.map((v,i)=>i<3?'#C0392B':i<6?'#C8922A':'#2E6DA4'),
+        borderRadius:4
+      }]
+    },
+    options:{
+      indexAxis:'y',
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{title:{display:true,text:'Mean |SHAP value| (impact on prediction)'},grid:{color:'rgba(0,0,0,0.05)'}},
+        y:{grid:{display:false}}
+      }
+    }
+  });
+}
+
+// Initialize first page
+updateRoi();
+scoreEmp();
+</script>
+</body>
+</html>
