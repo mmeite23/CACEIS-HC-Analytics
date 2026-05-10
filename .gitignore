@@ -1,8 +1,12 @@
 # ── CACEIS source data (confidential — never commit) ──────────────────────────
 data/
 Datasets/
+Dashboard/
 *.xlsx
 *.pdf
+
+# ── Root-level notebook duplicate ─────────────────────────────────────────────
+/pipeline_hc_analytics.ipynb
 
 # ── Generated outputs (reproducible from pipeline) ────────────────────────────
 outputs/*.png
